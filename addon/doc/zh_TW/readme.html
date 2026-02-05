@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="../style.css" media="screen">
+<title>Scintilla IME Composition Caret Fix 1.0</title>
+</head>
+<body>
+<h1>Scintilla 輸入法游標修正</h1>
+<h2>簡介</h2>
+<p>此 NVDA 附加元件修正了在 Scintilla 編輯器（如 Notepad++）中，使用輸入法時游標移動報讀不正確的問題。</p>
+<h2>問題描述</h2>
+<p>自 NVDA 2022.1 版本起，在 Scintilla 編輯器（如 Notepad++）中使用輸入法輸入中文、日文、韓文等 CJK 字元時，NVDA 無法：</p>
+<ul>
+<li>在尚未送出的組字字串中使用方向鍵導覽時，正確報讀游標所在的字元</li>
+<li>在組字導覽時正確更新點字顯示器</li>
+</ul>
+<p>NVDA 只會在組字字串中按方向鍵時報讀「空白」。</p>
+<p>此問題追蹤於：https://github.com/nvaccess/nvda/issues/14152</p>
+<h2>解決方案</h2>
+<p>本附加元件手動追蹤輸入法組字字串中的游標位置，並在使用方向鍵導覽時報讀正確的字元。其運作方式如下：</p>
+<ol>
+<li>偵測使用者是否在 Scintilla 控制項中且有作用中的輸入法組字</li>
+<li>攔截左右方向鍵按下事件</li>
+<li>追蹤組字字串中的游標位置</li>
+<li>透過語音和點字報讀對應的字元</li>
+</ol>
+<h2>相容性</h2>
+<ul>
+<li>最低 NVDA 版本：2022.1</li>
+<li>測試編輯器：Notepad++ 及其他 Scintilla 編輯器</li>
+<li>測試輸入法：微軟注音輸入法</li>
+</ul>
+<h2>使用方式</h2>
+<p>安裝附加元件後，在 Notepad++ 或其他 Scintilla 編輯器中正常使用輸入法即可。當您輸入字元並使用方向鍵在尚未送出的組字字串中導覽時，NVDA 現在會正確報讀每個字元。</p>
+<h2>更新日誌</h2>
+<h3>1.0 版</h3>
+<ul>
+<li>首次發布</li>
+<li>修正 Scintilla 編輯器中的輸入法組字導覽問題</li>
+</ul>
+</body>
+</html>

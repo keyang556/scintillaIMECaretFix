@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="../style.css" media="screen">
+<title>Scintilla IME Composition Caret Fix 1.0</title>
+</head>
+<body>
+<h1>Scintilla IME Caret Fix</h1>
+<h2>Summary</h2>
+<p>This NVDA add-on fixes the issue where caret movements within IME composition strings are not announced correctly in Scintilla-based editors like Notepad++.</p>
+<h2>Problem Description</h2>
+<p>Since NVDA 2022.1, when using an Input Method Editor (IME) to input Chinese, Japanese, Korean, or other CJK characters in Scintilla-based editors (such as Notepad++), NVDA fails to:</p>
+<ul>
+<li>Announce the correct character when navigating within uncommitted composition strings using arrow keys</li>
+<li>Update the braille display with the correct character during composition navigation</li>
+</ul>
+<p>Instead, NVDA announces "blank" for every arrow key press within the composition string.</p>
+<p>This issue is tracked at: https://github.com/nvaccess/nvda/issues/14152</p>
+<h2>Solution</h2>
+<p>This add-on manually tracks the cursor position within IME composition strings and announces the correct character when navigating with arrow keys. It:</p>
+<ol>
+<li>Detects when the user is in a Scintilla control with an active IME composition</li>
+<li>Intercepts left and right arrow key presses</li>
+<li>Tracks the cursor position within the composition string</li>
+<li>Announces the appropriate character via speech and braille</li>
+</ol>
+<h2>Compatibility</h2>
+<ul>
+<li>Minimum NVDA version: 2022.1</li>
+<li>Tested with: Notepad++, and other Scintilla-based editors</li>
+<li>Tested IME: Microsoft Bopomofo (Traditional Chinese)</li>
+</ul>
+<h2>Usage</h2>
+<p>Simply install the add-on and use your IME as normal in Notepad++ or other Scintilla-based editors. When you type characters and use arrow keys to navigate within the uncommitted composition string, NVDA will now correctly announce each character.</p>
+<h2>Changelog</h2>
+<h3>Version 1.0</h3>
+<ul>
+<li>Initial release</li>
+<li>Fixes IME composition navigation in Scintilla editors</li>
+</ul>
+</body>
+</html>
