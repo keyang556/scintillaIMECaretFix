@@ -1,4 +1,4 @@
-# Scintilla IME Caret Fix
+# Scintilla IME Composition Caret Fix
 
 ## Summary
 
@@ -8,12 +8,15 @@ This NVDA add-on fixes the issue where caret movements within IME composition st
 
 Since NVDA 2022.1, when using an Input Method Editor (IME) to input Chinese, Japanese, Korean, or other CJK characters in Scintilla-based editors (such as Notepad++), NVDA fails to:
 
+- Display the composition string on the braille display while typing
 - Announce the correct character when navigating within uncommitted composition strings using arrow keys
 - Update the braille display with the correct character during composition navigation
 
-Instead, NVDA announces "blank" for every arrow key press within the composition string.
+Instead, NVDA announces "blank" for every arrow key press within the composition string, and the braille display shows no feedback during typing.
 
-This issue is tracked at: https://github.com/nvaccess/nvda/issues/14152
+These issues are tracked at:
+- https://github.com/nvaccess/nvda/issues/14140 (No braille feedback when typing)
+- https://github.com/nvaccess/nvda/issues/14152 (Caret navigation not announced)
 
 ## Solution
 
@@ -36,7 +39,14 @@ Simply install the add-on and use your IME as normal in Notepad++ or other Scint
 
 ## Changelog
 
+### Version 1.1
+
+- Updated build configuration for proper add-on packaging
+- Added Traditional Chinese localization for manifest
+- Improved documentation
+
 ### Version 1.0
 
 - Initial release
 - Fixes IME composition navigation in Scintilla editors
+- Fixes braille display not showing composition string while typing (#14140)

@@ -8,11 +8,14 @@
 Global plugin to fix NVDA failing to track caret movements within IME composition
 strings in Scintilla-based editors like Notepad++.
 
-This fixes issue: https://github.com/nvaccess/nvda/issues/14152
+This fixes issues:
+- https://github.com/nvaccess/nvda/issues/14140 (No braille feedback when typing composition string)
+- https://github.com/nvaccess/nvda/issues/14152 (Caret navigation not announced)
 
 Approach: Monitor NVDA's InputComposition object and manually track cursor position
 within the composition string, since Scintilla doesn't expose the cursor position
-via InputComposition.selectionStart or caretOffset.
+via InputComposition.selectionStart or caretOffset. Also monitors composition string
+changes to provide braille feedback during typing.
 """
 
 import globalPluginHandler
@@ -23,6 +26,7 @@ import winUser
 import inputCore
 from logHandler import log
 import wx
+import core
 from NVDAObjects import inputComposition
 
 
@@ -55,27 +59,103 @@ def getInputCompositionObject(obj):
 
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
-	"""Global plugin that monitors Scintilla controls for IME composition navigation."""
+	"""Global plugin that monitors Scintilla controls for IME composition navigation and braille output."""
 
 	def __init__(self):
 		super().__init__()
 		self._compositionString = ""
 		self._cursorPos = 0  # Manually tracked cursor position
 		self._lastCompObjId = None  # To detect new compositions
+		self._pollTimer = None  # Timer for polling composition changes
+		self._lastPolledComposition = ""  # Last composition string seen during polling
+		self._isMonitoring = False  # Flag to track if we're actively monitoring
 		# Register our gesture filter
 		inputCore.decide_executeGesture.register(self._onGesture)
-		log.debug("ScintillaIME: Plugin initialized (manual cursor tracking)")
+		# Register focus event handler
+		core.postNvdaStartup.register(self._registerFocusHandler)
+		log.debug("ScintillaIME: Plugin initialized (manual cursor tracking + braille monitoring)")
+
+	def _registerFocusHandler(self):
+		"""Register the focus change handler after NVDA is fully started."""
+		try:
+			from visionEnhancementProviders import screenCurtain
+		except ImportError:
+			pass
+		# Hook into focus events
+		import eventHandler
+		self._oldFocusHandler = getattr(eventHandler, '_handleFocusChange', None)
+		log.debug("ScintillaIME: Focus handler registered")
 
 	def terminate(self):
 		try:
 			inputCore.decide_executeGesture.unregister(self._onGesture)
 		except Exception:
 			pass
+		try:
+			core.postNvdaStartup.unregister(self._registerFocusHandler)
+		except Exception:
+			pass
+		self._stopCompositionPolling()
 		super().terminate()
 
-	def _onGesture(self, gesture, *args, **kwargs):
-		"""Filter gestures to detect arrow keys during IME composition."""
+	def _startCompositionPolling(self):
+		"""Start polling for composition string changes."""
+		if self._pollTimer is None:
+			self._pollTimer = wx.CallLater(50, self._pollCompositionChanges)
+			self._isMonitoring = True
+			log.debug("ScintillaIME: Started composition polling")
+
+	def _stopCompositionPolling(self):
+		"""Stop polling for composition string changes."""
+		if self._pollTimer is not None:
+			try:
+				self._pollTimer.Stop()
+			except Exception:
+				pass
+			self._pollTimer = None
+		self._isMonitoring = False
+		self._lastPolledComposition = ""
+		log.debug("ScintillaIME: Stopped composition polling")
+
+	def _pollCompositionChanges(self):
+		"""Poll for changes to the composition string and update braille."""
 		try:
+			focus = api.getFocusObject()
+			if not focus or not isScintillaWindow(focus):
+				self._stopCompositionPolling()
+				return
+
+			compObj = getInputCompositionObject(focus)
+			if compObj and hasattr(compObj, 'compositionString') and compObj.compositionString:
+				currentComp = compObj.compositionString
+				# Check if composition string changed (new character typed)
+				if currentComp != self._lastPolledComposition:
+					log.debug(f"ScintillaIME: Composition changed from '{self._lastPolledComposition}' to '{currentComp}'")
+					# Update braille to show the full composition string
+					braille.handler.message(currentComp)
+					self._lastPolledComposition = currentComp
+				# Continue polling
+				self._pollTimer = wx.CallLater(50, self._pollCompositionChanges)
+			else:
+				# No more composition, stop polling
+				self._stopCompositionPolling()
+		except Exception as e:
+			log.debugWarning(f"ScintillaIME: Error polling composition: {e}")
+			self._stopCompositionPolling()
+
+
+	def _onGesture(self, gesture, *args, **kwargs):
+		"""Filter gestures to detect arrow keys during IME composition and start braille monitoring."""
+		try:
+			# First, check if we should start braille monitoring for any keystroke
+			focus = api.getFocusObject()
+			if focus and isScintillaWindow(focus):
+				compObj = getInputCompositionObject(focus)
+				if compObj and hasattr(compObj, 'compositionString') and compObj.compositionString:
+					# Start polling for braille updates if not already monitoring
+					if not self._isMonitoring:
+						self._startCompositionPolling()
+
 			# Check if this is a left or right arrow key
 			arrowDirection = 0  # -1 for left, +1 for right
 			if hasattr(gesture, 'vkCode'):
